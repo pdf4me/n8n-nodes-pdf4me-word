@@ -49,7 +49,7 @@ For Docker-based deployments, add the package to your package.json and rebuild t
   },
   "dependencies": {
     "n8n": "^1.0.0",
-    "n8n-nodes-pdf4me-word": "^1.0.0"
+    "n8n-nodes-pdf4me-word": "^0.8.0"
   }
 }
 ```
@@ -222,7 +222,7 @@ For issues and feature requests:
 
 ## Version History
 
-### 1.0.0 (Current)
+### 0.8.0 (Current)
 - Initial release of `n8n-nodes-pdf4me-word`
 - Word operations: Add Text/Image Watermark, Extract Metadata, Optimize, Compare, Split, Merge, Delete Pages, Secure, Update TOC, Replace Text, Update Headers/Footers
 - Multiple input methods (binary data, base64, URL)

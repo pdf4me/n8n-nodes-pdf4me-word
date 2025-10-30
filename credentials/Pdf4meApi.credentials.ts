@@ -38,8 +38,17 @@ export class Pdf4meApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL: 'https://api.pdf4me.com',
-			url: '/api/v2/AddDelay',
-			method: 'GET',
+			url: '/api/v2/CreateBarcode',
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: {
+				text: 'test',
+				barcodeType: 'qrCode',
+				hideText: true,
+				async: true,
+			},
 		},
 	};
 }
