@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-pdf4me-word",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "n8n community node for Word document processing with PDF4me API: watermarks (text/image), extract metadata, optimize, compare, split/merge, delete pages, secure, update TOC, replace text, headers/footers",
   "keywords": [
     "n8n-community-node-package",
