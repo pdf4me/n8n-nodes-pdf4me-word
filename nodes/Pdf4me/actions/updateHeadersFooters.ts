@@ -267,14 +267,13 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	// === DOCUMENT SETTINGS ===
 	{
 		displayName: 'Source Document Name',
 		name: 'docName',
 		type: 'string',
-		default: 'document.docx',
+		default: 'myWordFile.docx',
 		description: 'Name of the original Word file (for reference and processing)',
-		placeholder: 'document.docx',
+		placeholder: 'myWordFile.docx',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.UpdateHeadersFooters],
@@ -318,8 +317,8 @@ export const description: INodeProperties[] = [
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	try {
 		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-		const docName = this.getNodeParameter('docName', index) as string;
-		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
+		const docName = this.getNodeParameter('docName', index, 'myWordFile.docx') as string;
+		const binaryDataName = this.getNodeParameter('binaryDataName', index, 'data') as string;
 		const contentType = this.getNodeParameter('contentType', index, 'plain') as string;
 		const cultureName = this.getNodeParameter('cultureName', index, 'en-US') as string;
 
@@ -411,15 +410,22 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		};
 
 		// Build UpdateHeadersFootersAction based on content type
-		const updateAction: IDataObject = {};
+		const updateHeadersFootersAction: IDataObject = {};
+		let hasContent = false;
 
 		if (contentType === 'plain') {
 			// Plain text mode
 			const allPagesHeader = this.getNodeParameter('allPagesHeader', index, '') as string;
 			const allPagesFooter = this.getNodeParameter('allPagesFooter', index, '') as string;
 
-			if (allPagesHeader) updateAction.AllPagesHeaderHtml = allPagesHeader;
-			if (allPagesFooter) updateAction.AllPagesFooterHtml = allPagesFooter;
+			if (allPagesHeader) {
+				updateHeadersFootersAction.AllPagesHeaderHtml = allPagesHeader;
+				hasContent = true;
+			}
+			if (allPagesFooter) {
+				updateHeadersFootersAction.AllPagesFooterHtml = allPagesFooter;
+				hasContent = true;
+			}
 		} else if (contentType === 'html') {
 			// HTML mode
 			const allPagesHeaderHtml = this.getNodeParameter('allPagesHeaderHtml', index, '') as string;
@@ -431,32 +437,57 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			const oddPagesHeaderHtml = this.getNodeParameter('oddPagesHeaderHtml', index, '') as string;
 			const oddPagesFooterHtml = this.getNodeParameter('oddPagesFooterHtml', index, '') as string;
 
-			if (allPagesHeaderHtml) updateAction.AllPagesHeaderHtml = allPagesHeaderHtml;
-			if (allPagesFooterHtml) updateAction.AllPagesFooterHtml = allPagesFooterHtml;
-			if (firstPageHeaderHtml) updateAction.FirstPageHeaderHtml = firstPageHeaderHtml;
-			if (firstPageFooterHtml) updateAction.FirstPageFooterHtml = firstPageFooterHtml;
-			if (evenPagesHeaderHtml) updateAction.EvenPagesHeaderHtml = evenPagesHeaderHtml;
-			if (evenPagesFooterHtml) updateAction.EvenPagesFooterHtml = evenPagesFooterHtml;
-			if (oddPagesHeaderHtml) updateAction.OddPagesHeaderHtml = oddPagesHeaderHtml;
-			if (oddPagesFooterHtml) updateAction.OddPagesFooterHtml = oddPagesFooterHtml;
+			if (allPagesHeaderHtml) {
+				updateHeadersFootersAction.AllPagesHeaderHtml = allPagesHeaderHtml;
+				hasContent = true;
+			}
+			if (allPagesFooterHtml) {
+				updateHeadersFootersAction.AllPagesFooterHtml = allPagesFooterHtml;
+				hasContent = true;
+			}
+			if (firstPageHeaderHtml) {
+				updateHeadersFootersAction.FirstPageHeaderHtml = firstPageHeaderHtml;
+				hasContent = true;
+			}
+			if (firstPageFooterHtml) {
+				updateHeadersFootersAction.FirstPageFooterHtml = firstPageFooterHtml;
+				hasContent = true;
+			}
+			if (evenPagesHeaderHtml) {
+				updateHeadersFootersAction.EvenPagesHeaderHtml = evenPagesHeaderHtml;
+				hasContent = true;
+			}
+			if (evenPagesFooterHtml) {
+				updateHeadersFootersAction.EvenPagesFooterHtml = evenPagesFooterHtml;
+				hasContent = true;
+			}
+			if (oddPagesHeaderHtml) {
+				updateHeadersFootersAction.OddPagesHeaderHtml = oddPagesHeaderHtml;
+				hasContent = true;
+			}
+			if (oddPagesFooterHtml) {
+				updateHeadersFootersAction.OddPagesFooterHtml = oddPagesFooterHtml;
+				hasContent = true;
+			}
 		}
 
 		// Add culture name if provided
-		if (cultureName) {
-			updateAction.CultureName = cultureName;
+		if (cultureName && cultureName.trim() !== '') {
+			updateHeadersFootersAction.CultureName = cultureName;
 		}
 
-		// Only add UpdateHeadersFootersAction if there's content to update
-		if (Object.keys(updateAction).length > 0) {
-			body.UpdateHeadersFootersAction = updateAction;
-		} else {
+		// Validate that at least one header or footer content is provided
+		if (!hasContent) {
 			throw new Error('At least one header or footer content must be provided');
 		}
+
+		// Add UpdateHeadersFootersAction to body
+		body.UpdateHeadersFootersAction = updateHeadersFootersAction;
 
 		// Send the request to the API
 		const responseData = await pdf4meAsyncRequest.call(
 			this,
-			'/office/ApiV2Word/UpdateHeadersFooters',
+			'/office/ApiV2Word/UpdateHeadersAndFooters',
 			body,
 		);
 

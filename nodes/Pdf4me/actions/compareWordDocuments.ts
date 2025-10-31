@@ -459,21 +459,19 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Build the request body according to the API specification
 		const body: IDataObject = {
 			document: {
-				name: firstDoc.fileName,
+				Name: firstDoc.fileName,
 			},
 			docContent: firstDoc.content,
-			CompareDocumentsAction: {
-				CompareWith: secondDoc.content,
-				IgnoreFormatting: ignoreFormatting,
-				IgnoreCase: ignoreCase,
-				IgnoreComments: ignoreComments,
-				IgnoreTables: ignoreTables,
-				IgnoreFields: ignoreFields,
-				IgnoreFootnotes: ignoreFootnotes,
-				IgnoreTextboxes: ignoreTextboxes,
-				IgnoreHeadersAndFooters: ignoreHeadersAndFooters,
-				Author: author,
-			},
+			compareWith: secondDoc.content,
+			ignoreFormatting: ignoreFormatting,
+			ignoreCase: ignoreCase,
+			ignoreComments: ignoreComments,
+			ignoreTables: ignoreTables,
+			ignoreFields: ignoreFields,
+			ignoreFootnotes: ignoreFootnotes,
+			ignoreTextboxes: ignoreTextboxes,
+			ignoreHeadersAndFooters: ignoreHeadersAndFooters,
+			author,
 		};
 
 		// Send the request to the API

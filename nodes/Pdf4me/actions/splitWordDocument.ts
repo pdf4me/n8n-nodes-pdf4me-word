@@ -273,18 +273,16 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		// Build the request body according to the API specification
 		const body: IDataObject = {
 			document: {
-				name: originalFileName,
+				Name: originalFileName,
 			},
 			docContent,
-			SplitDocumentAction: {
-				SplitType: splitType,
-			},
+			splitType,
 			cultureName,
 		};
 
 		// Add PageRanges if provided and SplitType is Pages or Custom
 		if (pageRanges && pageRanges.trim() !== '' && (splitType === 'Pages' || splitType === 'Custom')) {
-			(body.SplitDocumentAction as IDataObject).PageRanges = pageRanges.trim();
+			body.pageRanges = pageRanges.trim();
 		}
 
 		// Send the request to the API

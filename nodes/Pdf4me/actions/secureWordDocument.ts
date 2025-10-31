@@ -97,14 +97,42 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	// === SECURITY SETTINGS ===
+	// === OPEN PROTECTION SETTINGS ===
+	{
+		displayName: 'Secure On Open',
+		name: 'secureOnOpen',
+		type: 'boolean',
+		default: false,
+		description: 'Enable password protection to open the document',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SecureWordDocument],
+			},
+		},
+	},
+	{
+		displayName: 'Open Password',
+		name: 'secureOnOpenPassword',
+		type: 'string',
+		typeOptions: {
+			password: true,
+		},
+		default: '',
+		description: 'Password required to open the document',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.SecureWordDocument],
+				secureOnOpen: [true],
+			},
+		},
+	},
+	// === EDITING PROTECTION SETTINGS ===
 	{
 		displayName: 'Protection Type',
 		name: 'protectionType',
 		type: 'options',
-		required: true,
-		default: 'ReadOnly',
-		description: 'Type of document protection to apply',
+		default: 'NoProtection',
+		description: 'Type of document editing restrictions',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SecureWordDocument],
@@ -112,40 +140,45 @@ export const description: INodeProperties[] = [
 		},
 		options: [
 			{
+				name: 'No Protection',
+				value: 'NoProtection',
+				description: 'No editing restrictions',
+			},
+			{
 				name: 'Read Only',
 				value: 'ReadOnly',
 				description: 'Document is read-only, users cannot edit',
 			},
 			{
-				name: 'Comments Only',
-				value: 'CommentsOnly',
+				name: 'Allow Comments',
+				value: 'AllowComments',
 				description: 'Users can only add comments, not edit content',
 			},
 			{
-				name: 'Forms Only',
-				value: 'FormsOnly',
+				name: 'Allow Form Fields',
+				value: 'AllowFormFields',
 				description: 'Only form fields can be edited',
 			},
 			{
-				name: 'No Protection',
-				value: 'NoProtection',
-				description: 'Remove protection (if any)',
+				name: 'Allow Revisions',
+				value: 'AllowRevisions',
+				description: 'Allow document revisions (track changes)',
 			},
 		],
 	},
 	{
 		displayName: 'Protection Password',
-		name: 'password',
+		name: 'protectionPassword',
 		type: 'string',
 		typeOptions: {
 			password: true,
 		},
 		default: '',
-		description: 'Password required to modify the document protection settings',
+		description: 'Password for document protection (required to modify protection settings)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.SecureWordDocument],
-				protectionType: ['ReadOnly', 'CommentsOnly', 'FormsOnly'],
+				protectionType: ['ReadOnly', 'AllowComments', 'AllowFormFields', 'AllowRevisions'],
 			},
 		},
 	},
@@ -181,7 +214,7 @@ export const description: INodeProperties[] = [
 /**
  * Secure Word document using PDF4Me API
  * Process: Read Word file → Encode to base64 → Send API request → Poll for completion → Save secured Word file
- * Applies password protection and protection types to Word documents
+ * Applies password protection to open the document and/or editing restrictions with configurable protection types
  */
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	try {
@@ -189,8 +222,10 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		const docName = this.getNodeParameter('docName', index) as string;
 		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		const protectionType = this.getNodeParameter('protectionType', index) as string;
-		const password = this.getNodeParameter('password', index, '') as string;
+		const secureOnOpen = this.getNodeParameter('secureOnOpen', index, false) as boolean;
+		const secureOnOpenPassword = this.getNodeParameter('secureOnOpenPassword', index, '') as string;
+		const protectionType = this.getNodeParameter('protectionType', index, 'NoProtection') as string;
+		const protectionPassword = this.getNodeParameter('protectionPassword', index, '') as string;
 
 		let docContent: string;
 		let originalFileName = docName;
@@ -271,26 +306,42 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			throw new Error('Word content is required');
 		}
 
+		// Validate secure on open password if enabled
+		if (secureOnOpen && (!secureOnOpenPassword || secureOnOpenPassword.trim() === '')) {
+			throw new Error('Open password is required when Secure On Open is enabled');
+		}
+
 		// Build the request body according to the API specification
 		const body: IDataObject = {
-			document: {
-				name: originalFileName,
+			Document: {
+				Name: originalFileName,
 			},
 			docContent,
-			SecureDocumentAction: {
-				ProtectionType: protectionType,
-			},
+			SecureOnOpen: secureOnOpen,
 		};
 
-		// Add password if protection type requires it and password is provided
-		if (protectionType !== 'NoProtection' && password && password.trim() !== '') {
-			(body.SecureDocumentAction as IDataObject).Password = password;
+		// Add open password if secure on open is enabled
+		if (secureOnOpen && secureOnOpenPassword && secureOnOpenPassword.trim() !== '') {
+			body.SecureOnOpenPassword = secureOnOpenPassword;
 		}
+
+		// Build security options
+		const securityOptions: IDataObject = {
+			ProtectionType: protectionType,
+		};
+
+		// Add protection password if protection type requires it and password is provided
+		if (protectionType !== 'NoProtection' && protectionPassword && protectionPassword.trim() !== '') {
+			securityOptions.ProtectionPassword = protectionPassword;
+		}
+
+		// Add security options to body
+		body.SecurityOptions = securityOptions;
 
 		// Send the request to the API
 		const responseData = await pdf4meAsyncRequest.call(
 			this,
-			'/office/ApiV2Word/SecureDocument',
+			'/office/ApiV2Word/ApplySecurity',
 			body,
 		);
 
@@ -402,6 +453,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 						fileSize: wordBuffer.length,
 						success: true,
 						originalFileName,
+						secureOnOpen,
 						protectionType,
 						message: 'Word document secured successfully',
 					},

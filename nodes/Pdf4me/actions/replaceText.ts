@@ -84,162 +84,156 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
-	// === REPLACE TEXT SETTINGS ===
+	// === TEXT REPLACEMENT PHRASES ===
 	{
-		displayName: 'Search Text',
-		name: 'searchText',
-		type: 'string',
+		displayName: 'Text Replacements',
+		name: 'phrases',
+		type: 'fixedCollection',
+		typeOptions: {
+			multipleValues: true,
+		},
 		required: true,
-		default: '',
-		description: 'Text to search for in the document',
-		placeholder: 'Old Company',
+		default: {},
+		description: 'Array of text replacements to perform',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.ReplaceText],
 			},
 		},
-	},
-	{
-		displayName: 'Replacement Text',
-		name: 'replacementText',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'Text to replace the search text with',
-		placeholder: 'New Company',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceText],
+		options: [
+			{
+				name: 'phrase',
+				displayName: 'Replacement',
+				values: [
+					{
+						displayName: 'Search Text',
+						name: 'findText',
+						type: 'string',
+						required: true,
+						default: '',
+						description: 'Text to search for in the document',
+						placeholder: 'Old Company',
+					},
+					{
+						displayName: 'Replacement Text',
+						name: 'replaceText',
+						type: 'string',
+						required: true,
+						default: '',
+						description: 'Text to replace the search text with',
+						placeholder: 'New Company',
+					},
+					{
+						displayName: 'Match Case',
+						name: 'caseSensitive',
+						type: 'boolean',
+						default: false,
+						description: 'Perform case-sensitive search',
+					},
+					{
+						displayName: 'Match Whole Word',
+						name: 'findWholeWordsOnly',
+						type: 'boolean',
+						default: false,
+						description: 'Match whole words only',
+					},
+					{
+						displayName: 'Use Regular Expressions',
+						name: 'isExpression',
+						type: 'boolean',
+						default: false,
+						description: 'Use regular expressions for search',
+					},
+					{
+						displayName: 'Font Name',
+						name: 'font',
+						type: 'string',
+						default: '',
+						description: 'Font name for the replacement text (e.g., Arial, Times New Roman)',
+						placeholder: 'Arial',
+					},
+					{
+						displayName: 'Font Color',
+						name: 'fontColor',
+						type: 'color',
+						default: '#000000',
+						description: 'Text color for the replacement text',
+					},
+					{
+						displayName: 'Font Size',
+						name: 'fontSize',
+						type: 'number',
+						default: 0,
+						description: 'Font size in points (0 = keep original size)',
+						placeholder: '12',
+					},
+					{
+						displayName: 'Background Color',
+						name: 'backgroundColor',
+						type: 'color',
+						default: '#FFFFFF',
+						description: 'Background color for the replacement text',
+					},
+					{
+						displayName: 'Bold',
+						name: 'bold',
+						type: 'boolean',
+						default: false,
+						description: 'Apply bold formatting to replacement text',
+					},
+					{
+						displayName: 'Italic',
+						name: 'italic',
+						type: 'boolean',
+						default: false,
+						description: 'Apply italic formatting to replacement text',
+					},
+					{
+						displayName: 'Underline',
+						name: 'underline',
+						type: 'boolean',
+						default: false,
+						description: 'Apply underline formatting to replacement text',
+					},
+					{
+						displayName: 'Strikethrough',
+						name: 'strikethrough',
+						type: 'boolean',
+						default: false,
+						description: 'Apply strikethrough formatting to replacement text',
+					},
+					{
+						displayName: 'Double Strikethrough',
+						name: 'doubleStrikethrough',
+						type: 'boolean',
+						default: false,
+						description: 'Apply double strikethrough formatting to replacement text',
+					},
+					{
+						displayName: 'Subscript',
+						name: 'subscript',
+						type: 'boolean',
+						default: false,
+						description: 'Apply subscript formatting to replacement text',
+					},
+					{
+						displayName: 'Superscript',
+						name: 'superscript',
+						type: 'boolean',
+						default: false,
+						description: 'Apply superscript formatting to replacement text',
+					},
+					{
+						displayName: 'Word Spacing',
+						name: 'wordSpacing',
+						type: 'number',
+						default: 0,
+						description: 'Word spacing in points (space between words, 0 = default)',
+						placeholder: '0',
+					},
+				],
 			},
-		},
-	},
-	{
-		displayName: 'Match Case',
-		name: 'matchCase',
-		type: 'boolean',
-		default: false,
-		description: 'Whether to perform case-sensitive search',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceText],
-			},
-		},
-	},
-	{
-		displayName: 'Match Whole Word',
-		name: 'matchWholeWord',
-		type: 'boolean',
-		default: false,
-		description: 'Whether to match whole words only',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceText],
-			},
-		},
-	},
-	{
-		displayName: 'Use Regular Expressions',
-		name: 'useRegex',
-		type: 'boolean',
-		default: false,
-		description: 'Whether to use regular expressions for search',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceText],
-			},
-		},
-	},
-	{
-		displayName: 'Apply Formatting',
-		name: 'applyFormatting',
-		type: 'boolean',
-		default: false,
-		description: 'Whether to apply custom formatting to the replacement text',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceText],
-			},
-		},
-	},
-	{
-		displayName: 'Font Name',
-		name: 'fontName',
-		type: 'string',
-		default: 'Arial',
-		description: 'Font name for the replacement text',
-		placeholder: 'Arial',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceText],
-				applyFormatting: [true],
-			},
-		},
-	},
-	{
-		displayName: 'Font Size',
-		name: 'fontSize',
-		type: 'number',
-		default: 12,
-		description: 'Font size for the replacement text',
-		placeholder: '12',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceText],
-				applyFormatting: [true],
-			},
-		},
-	},
-	{
-		displayName: 'Bold',
-		name: 'bold',
-		type: 'boolean',
-		default: false,
-		description: 'Whether to make the replacement text bold',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceText],
-				applyFormatting: [true],
-			},
-		},
-	},
-	{
-		displayName: 'Italic',
-		name: 'italic',
-		type: 'boolean',
-		default: false,
-		description: 'Whether to make the replacement text italic',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceText],
-				applyFormatting: [true],
-			},
-		},
-	},
-	{
-		displayName: 'Underline',
-		name: 'underline',
-		type: 'boolean',
-		default: false,
-		description: 'Whether to underline the replacement text',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceText],
-				applyFormatting: [true],
-			},
-		},
-	},
-	{
-		displayName: 'Text Color',
-		name: 'textColor',
-		type: 'color',
-		default: '#000000',
-		description: 'Text color for the replacement text (hex format)',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.ReplaceText],
-				applyFormatting: [true],
-			},
-		},
+		],
 	},
 	// === DOCUMENT SETTINGS ===
 	{
@@ -287,36 +281,38 @@ export const description: INodeProperties[] = [
 /**
  * Replace Text in Word documents using PDF4Me API
  * Process: Read Word file → Encode to base64 → Send API request → Poll for completion → Save updated Word file
- * Replaces text in Word documents with configurable search options and formatting
+ * Replaces text in Word documents with configurable search options and formatting using a phrases array
  */
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	try {
 		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
 		const docName = this.getNodeParameter('docName', index) as string;
 		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-		const searchText = this.getNodeParameter('searchText', index) as string;
-		const replacementText = this.getNodeParameter('replacementText', index) as string;
-		const matchCase = this.getNodeParameter('matchCase', index, false) as boolean;
-		const matchWholeWord = this.getNodeParameter('matchWholeWord', index, false) as boolean;
-		const useRegex = this.getNodeParameter('useRegex', index, false) as boolean;
-		const applyFormatting = this.getNodeParameter('applyFormatting', index, false) as boolean;
 		const cultureName = this.getNodeParameter('cultureName', index, 'en-US') as string;
 
-		// Get formatting options if applicable
-		let fontName: string | undefined;
-		let fontSize: number | undefined;
-		let bold: boolean | undefined;
-		let italic: boolean | undefined;
-		let underline: boolean | undefined;
-		let textColor: string | undefined;
+		// Get phrases array
+		const phrasesData = this.getNodeParameter('phrases.phrase', index, []) as Array<{
+			findText: string;
+			replaceText: string;
+			caseSensitive?: boolean;
+			findWholeWordsOnly?: boolean;
+			isExpression?: boolean;
+			font?: string;
+			fontColor?: string;
+			fontSize?: number;
+			backgroundColor?: string;
+			bold?: boolean;
+			italic?: boolean;
+			underline?: boolean;
+			strikethrough?: boolean;
+			doubleStrikethrough?: boolean;
+			subscript?: boolean;
+			superscript?: boolean;
+			wordSpacing?: number;
+		}>;
 
-		if (applyFormatting) {
-			fontName = this.getNodeParameter('fontName', index) as string;
-			fontSize = this.getNodeParameter('fontSize', index) as number;
-			bold = this.getNodeParameter('bold', index, false) as boolean;
-			italic = this.getNodeParameter('italic', index, false) as boolean;
-			underline = this.getNodeParameter('underline', index, false) as boolean;
-			textColor = this.getNodeParameter('textColor', index, '#000000') as string;
+		if (!phrasesData || phrasesData.length === 0) {
+			throw new Error('At least one text replacement phrase is required');
 		}
 
 		let docContent: string;
@@ -398,36 +394,77 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			throw new Error('Word content is required');
 		}
 
+		// Build the phrases array with PascalCase field names for the API
+		const phrases: IDataObject[] = phrasesData.map((phrase) => {
+			const apiPhrase: IDataObject = {
+				FindText: phrase.findText,
+				ReplaceText: phrase.replaceText,
+			};
+
+			// Add optional search options
+			if (phrase.caseSensitive !== undefined) {
+				apiPhrase.CaseSensitive = phrase.caseSensitive;
+			}
+			if (phrase.findWholeWordsOnly !== undefined) {
+				apiPhrase.FindWholeWordsOnly = phrase.findWholeWordsOnly;
+			}
+			if (phrase.isExpression !== undefined) {
+				apiPhrase.IsExpression = phrase.isExpression;
+			}
+
+			// Add formatting options
+			if (phrase.font && phrase.font.trim() !== '') {
+				apiPhrase.Font = phrase.font;
+			}
+			if (phrase.fontColor && phrase.fontColor.trim() !== '') {
+				apiPhrase.FontColor = phrase.fontColor;
+			}
+			if (phrase.fontSize !== undefined && phrase.fontSize > 0) {
+				apiPhrase.FontSize = phrase.fontSize;
+			}
+			if (phrase.backgroundColor && phrase.backgroundColor.trim() !== '') {
+				apiPhrase.BackgroundColor = phrase.backgroundColor;
+			}
+			if (phrase.bold !== undefined) {
+				apiPhrase.Bold = phrase.bold;
+			}
+			if (phrase.italic !== undefined) {
+				apiPhrase.Italic = phrase.italic;
+			}
+			if (phrase.underline !== undefined) {
+				apiPhrase.Underline = phrase.underline;
+			}
+			if (phrase.strikethrough !== undefined) {
+				apiPhrase.Strikethrough = phrase.strikethrough;
+			}
+			if (phrase.doubleStrikethrough !== undefined) {
+				apiPhrase.DoubleStrikethrough = phrase.doubleStrikethrough;
+			}
+			if (phrase.subscript !== undefined) {
+				apiPhrase.Subscript = phrase.subscript;
+			}
+			if (phrase.superscript !== undefined) {
+				apiPhrase.Superscript = phrase.superscript;
+			}
+			if (phrase.wordSpacing !== undefined && phrase.wordSpacing !== 0) {
+				apiPhrase.WordSpacing = phrase.wordSpacing;
+			}
+
+			return apiPhrase;
+		});
+
 		// Build the request body according to the API specification
 		const body: IDataObject = {
 			document: {
-				name: originalFileName,
+				Name: originalFileName,
 			},
 			docContent,
-			ReplaceTextAction: {
-				SearchText: searchText,
-				ReplacementText: replacementText,
-				MatchCase: matchCase,
-				MatchWholeWord: matchWholeWord,
-				UseRegex: useRegex,
-			},
-			cultureName,
+			Phrases: phrases,
 		};
 
-		// Add formatting options if applicable
-		if (applyFormatting) {
-			const formatting: IDataObject = {};
-			if (fontName) formatting.FontName = fontName;
-			if (fontSize) formatting.FontSize = fontSize;
-			if (bold !== undefined) formatting.Bold = bold;
-			if (italic !== undefined) formatting.Italic = italic;
-			if (underline !== undefined) formatting.Underline = underline;
-			if (textColor) formatting.Color = textColor;
-
-			// Only add Formatting object if it has properties
-			if (Object.keys(formatting).length > 0) {
-				(body.ReplaceTextAction as IDataObject).Formatting = formatting;
-			}
+		// Add culture name if provided
+		if (cultureName && cultureName.trim() !== '') {
+			body.CultureName = cultureName;
 		}
 
 		// Send the request to the API
@@ -531,11 +568,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 					fileSize: wordBuffer.length,
 					success: true,
 					originalFileName,
-					searchText,
-					replacementText,
-					matchCase,
-					matchWholeWord,
-					useRegex,
+					phrasesCount: phrases.length,
 					cultureName,
 					message: 'Text replaced successfully',
 				},
@@ -552,4 +585,3 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		throw new Error(`Replace Text failed: ${errorMessage}`);
 	}
 }
-

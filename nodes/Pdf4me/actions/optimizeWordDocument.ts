@@ -116,33 +116,6 @@ export const description: INodeProperties[] = [
 		],
 	},
 	{
-		displayName: 'Word Version',
-		name: 'wordVersion',
-		type: 'string',
-		default: '2019',
-		description: 'Word version for optimization (e.g., 2019, 2016, 2013)',
-		placeholder: '2019',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.OptimizeWordDocument],
-			},
-		},
-	},
-	// === DOCUMENT SETTINGS ===
-	{
-		displayName: 'Source Document Name',
-		name: 'docName',
-		type: 'string',
-		default: 'myWordFile.docx',
-		description: 'Name of the original Word file (for reference and processing)',
-		placeholder: 'myWordFile.docx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.OptimizeWordDocument],
-			},
-		},
-	},
-	{
 		displayName: 'Culture Name',
 		name: 'cultureName',
 		type: 'string',
@@ -174,7 +147,7 @@ export const description: INodeProperties[] = [
 		name: 'binaryDataName',
 		type: 'string',
 		default: 'data',
-		description: 'Name for the binary data in the n這里 output (used to access the processed file)',
+		description: 'Name for the binary data in the output object (used to access the processed file)',
 		placeholder: 'word-file',
 		displayOptions: {
 			show: {
@@ -281,7 +254,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Build the request body according to the API specification
 		const body: IDataObject = {
 			document: {
-				name: originalFileName,
+				Name: originalFileName,
 			},
 			docContent,
 			optimizationLevel,

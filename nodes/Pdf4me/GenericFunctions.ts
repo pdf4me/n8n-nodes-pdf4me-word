@@ -254,6 +254,7 @@ export const ActionConstants = {
 	UpdateToc: 'Update Table of Contents',
 	ReplaceText: 'Replace Text',
 	UpdateHeadersFooters: 'Update Headers and Footers',
+	ReplaceTextWithImage: 'Replace Text With Image',
 };
 
 /**
