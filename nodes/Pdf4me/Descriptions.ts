@@ -12,6 +12,7 @@ import * as deletePagesFromWord from './actions/deletePagesFromWord';
 import * as updateToc from './actions/updateToc';
 import * as replaceText from './actions/replaceText';
 import * as updateHeadersFooters from './actions/updateHeadersFooters';
+import * as replaceTextWithImage from './actions/replaceTextWithImage';
 import { ActionConstants } from './GenericFunctions';
 
 export const descriptions: INodeTypeDescription = {
@@ -22,7 +23,7 @@ export const descriptions: INodeTypeDescription = {
 		name: 'PDF4me Word',
 	},
 	group: ['transform'],
-	icon: 'file:icon.svg',
+	icon: 'file:300.svg',
 	inputs: [NodeConnectionType.Main],
 	outputs: [NodeConnectionType.Main],
 	credentials: [
@@ -110,6 +111,12 @@ export const descriptions: INodeTypeDescription = {
 					value: ActionConstants.UpdateHeadersFooters,
 					action: 'Update headers and footers in Word document',
 				},
+				{
+					name: 'Replace Text With Image',
+					description: 'Replace text in Word documents with images, with configurable size, aspect ratio, and page filtering options',
+					value: ActionConstants.ReplaceTextWithImage,
+					action: 'Replace text with image in Word document',
+				},
 			],
 			default: ActionConstants.AddTextWatermarkToWord,
 		},
@@ -125,6 +132,7 @@ export const descriptions: INodeTypeDescription = {
 		...updateToc.description,
 		...replaceText.description,
 		...updateHeadersFooters.description,
+		...replaceTextWithImage.description,
 	],
 	subtitle: '={{$parameter["operation"]}}',
 	version: 1,

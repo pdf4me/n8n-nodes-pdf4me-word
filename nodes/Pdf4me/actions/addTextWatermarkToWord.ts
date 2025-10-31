@@ -356,30 +356,29 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Build the request body according to the API specification
 		const body: IDataObject = {
 			document: {
-				name: originalFileName,
+				Name: originalFileName,
 			},
 			docContent,
-			TextWatermarkAction: {
-				WatermarkText: watermarkText,
-				FontFamily: fontFamily,
-				FontSize: fontSize,
-				FontColor: fontColor,
-				SemiTransparent: semiTransparent,
-				Rotation: rotation,
-				Orientation: orientation,
-				CultureName: cultureName,
-			},
-			IsAsync: true,
+			watermarkText,
+			fontFamily,
+			fontSize,
+			fontColor,
+			semiTransparent,
+			rotation,
+			fontName: fontFamily, // API expects both fontName and fontFamily
+			orientation,
+			cultureName,
 		};
 
 		// Send the request to the API
 		const responseData = await pdf4meAsyncRequest.call(
 			this,
-			'/office/ApiV2Word/WordAddTextWatermark',
+			'/office/ApiV2Word/AddTextWatermark',
 			body,
 		);
 
 		if (responseData) {
+
 			// Generate filename if not provided
 			let fileName = outputFileName;
 			if (!fileName || fileName.trim() === '') {

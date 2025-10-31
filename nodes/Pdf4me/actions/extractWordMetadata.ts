@@ -206,7 +206,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Build the request body according to the API specification
 		const body: IDataObject = {
 			document: {
-				name: originalFileName,
+				Name: originalFileName,
 			},
 			docContent,
 			cultureName,

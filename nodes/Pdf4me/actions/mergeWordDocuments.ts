@@ -5,105 +5,13 @@ import {
 } from '../GenericFunctions';
 
 export const description: INodeProperties[] = [
-	// === MAIN DOCUMENT INPUT SETTINGS ===
+	// === DOCUMENTS SOURCE ===
 	{
-		displayName: 'Main Document Input Method',
-		name: 'inputDataType',
+		displayName: 'Documents Source',
+		name: 'docsSource',
 		type: 'options',
-		required: true,
-		default: 'binaryData',
-		description: 'Choose how to provide the main Word file (first document)',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.MergeWordDocuments],
-			},
-		},
-		options: [
-			{
-				name: 'From Previous Node (Binary Data)',
-				value: 'binaryData',
-				description: 'Use Word file passed from a previous n8n node',
-			},
-			{
-				name: 'Base64 Encoded String',
-				value: 'base64',
-				description: 'Provide Word file content as base64 encoded string',
-			},
-			{
-				name: 'Download from URL',
-				value: 'url',
-				description: 'Download Word file directly from a web URL',
-			},
-		],
-	},
-	{
-		displayName: 'Main Document Binary Property Name',
-		name: 'binaryPropertyName',
-		type: 'string',
-		required: true,
-		default: 'data',
-		description: 'Name of the binary property containing the main Word file',
-		placeholder: 'data',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.MergeWordDocuments],
-				inputDataType: ['binaryData'],
-			},
-		},
-	},
-	{
-		displayName: 'Main Document Base64 Content',
-		name: 'base64Content',
-		type: 'string',
-		typeOptions: {
-			alwaysOpenEditWindow: true,
-		},
-		required: true,
-		default: '',
-		description: 'Base64 encoded string containing the main Word file data',
-		placeholder: 'UEsDBAoAAAAAAIdO4kAAAAAAAAAAAAAAAAAJAAAAZG9jUHJvcHMv...',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.MergeWordDocuments],
-				inputDataType: ['base64'],
-			},
-		},
-	},
-	{
-		displayName: 'Main Document URL',
-		name: 'url',
-		type: 'string',
-		required: true,
-		default: '',
-		description: 'URL to download the main Word file from',
-		placeholder: 'https://example.com/document1.docx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.MergeWordDocuments],
-				inputDataType: ['url'],
-			},
-		},
-	},
-	{
-		displayName: 'Main Document Name',
-		name: 'docName',
-		type: 'string',
-		default: 'document1.docx',
-		description: 'Name of the main Word file',
-		placeholder: 'document1.docx',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.MergeWordDocuments],
-			},
-		},
-	},
-	// === ADDITIONAL DOCUMENTS TO MERGE ===
-	{
-		displayName: 'Additional Documents Source',
-		name: 'additionalDocsSource',
-		type: 'options',
-		default: 'parameter',
-		description: 'How to provide additional documents to merge',
+		default: 'items',
+		description: 'How to provide documents to merge',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.MergeWordDocuments],
@@ -118,23 +26,23 @@ export const description: INodeProperties[] = [
 			{
 				name: 'Manual Entry',
 				value: 'parameter',
-				description: 'Manually specify additional documents',
+				description: 'Manually specify documents',
 			},
 		],
 	},
 	{
-		displayName: 'Additional Documents',
-		name: 'additionalDocuments',
+		displayName: 'Documents',
+		name: 'documents',
 		type: 'fixedCollection',
 		typeOptions: {
 			multipleValues: true,
 		},
 		default: {},
-		description: 'Additional Word documents to merge with the main document',
+		description: 'Word documents to merge',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.MergeWordDocuments],
-				additionalDocsSource: ['parameter'],
+				docsSource: ['parameter'],
 			},
 		},
 		options: [
@@ -197,39 +105,90 @@ export const description: INodeProperties[] = [
 						displayName: 'Sort Position',
 						name: 'sortPosition',
 						type: 'number',
-						default: 1,
-						description: 'Position in merge order (0 = first/main document, 1 = second, etc.)',
+						default: 0,
+						description: 'Position in merge order (0 = first, 1 = second, etc.)',
 					},
 				],
 			},
 		],
 	},
 	{
-		displayName: 'Additional Documents Binary Property Name',
-		name: 'additionalBinaryPropertyName',
+		displayName: 'Binary Property Name',
+		name: 'binaryPropertyName',
 		type: 'string',
 		default: 'data',
-		description: 'Name of the binary property containing additional Word files (for items mode)',
+		description: 'Name of the binary property containing Word files (for items mode)',
 		placeholder: 'data',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.MergeWordDocuments],
-				additionalDocsSource: ['items'],
+				docsSource: ['items'],
 			},
 		},
 	},
 	// === MERGE OPTIONS ===
 	{
-		displayName: 'Maintain Formatting',
-		name: 'maintainFormatting',
-		type: 'boolean',
-		default: true,
-		description: 'Whether to maintain formatting from source documents',
+		displayName: 'Format Mode',
+		name: 'formatMode',
+		type: 'options',
+		default: 'KeepSourceFormatting',
+		description: 'Select how to handle merging Microsoft Word document styles',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.MergeWordDocuments],
 			},
 		},
+		options: [
+			{
+				name: 'Keep Source Formatting',
+				value: 'KeepSourceFormatting',
+				description: 'Maintain all formatting from source documents',
+			},
+			{
+				name: 'Keep Different Styles',
+				value: 'KeepDifferentStyles',
+				description: 'Keep only different styles from each document',
+			},
+			{
+				name: 'Use Destination Styles',
+				value: 'UseDestinationStyles',
+				description: 'Apply destination document styles to all content',
+			},
+		],
+	},
+	{
+		displayName: 'Compliance Level',
+		name: 'complianceLevel',
+		type: 'options',
+		default: 'Transitional',
+		description: 'Document compliance level',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.MergeWordDocuments],
+			},
+		},
+		options: [
+			{
+				name: 'ECMA',
+				value: 'ECMA',
+				description: 'ECMA compliance level',
+			},
+			{
+				name: 'Transitional',
+				value: 'Transitional',
+				description: 'Transitional compliance level (recommended)',
+			},
+			{
+				name: 'Strict',
+				value: 'Strict',
+				description: 'Strict compliance level',
+			},
+			{
+				name: 'Custom',
+				value: 'Custom',
+				description: 'Custom compliance level',
+			},
+		],
 	},
 	// === OUTPUT SETTINGS ===
 	{
@@ -335,48 +294,28 @@ async function getDocumentContentFromInput(
  */
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	try {
-		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-		const docName = this.getNodeParameter('docName', index) as string;
 		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		const maintainFormatting = this.getNodeParameter('maintainFormatting', index, true) as boolean;
-		const additionalDocsSource = this.getNodeParameter('additionalDocsSource', index, 'parameter') as string;
-
-		// Get main document
-		const mainDoc = await getDocumentContentFromInput.call(
-			this,
-			index,
-			inputDataType,
-			inputDataType === 'base64' ? (this.getNodeParameter('base64Content', index) as string) : undefined,
-			inputDataType === 'url' ? (this.getNodeParameter('url', index) as string) : undefined,
-			inputDataType === 'binaryData' ? (this.getNodeParameter('binaryPropertyName', index) as string) : undefined,
-			docName,
-		);
+		const docsSource = this.getNodeParameter('docsSource', index, 'items') as string;
+		const formatMode = this.getNodeParameter('formatMode', index, 'KeepSourceFormatting') as string;
+		const complianceLevel = this.getNodeParameter('complianceLevel', index, 'Transitional') as string;
 
 		// Collect all documents to merge
 		const documentsToMerge: Array<{ FileContent: string; FileName: string; SortPosition: number }> = [];
 
-		// Add main document first (position 0)
-		documentsToMerge.push({
-			FileContent: mainDoc.content,
-			FileName: mainDoc.fileName,
-			SortPosition: 0,
-		});
-
-		// Get additional documents
-		if (additionalDocsSource === 'items') {
+		// Get documents based on source
+		if (docsSource === 'items') {
 			// Get documents from multiple input items
-			const additionalBinaryPropertyName = this.getNodeParameter('additionalBinaryPropertyName', index, 'data') as string;
+			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index, 'data') as string;
 			const items = this.getInputData();
 
 			for (let i = 0; i < items.length; i++) {
-				if (i === index) continue; // Skip the main document item
 				const item = items[i];
-				if (!item?.binary || !item.binary[additionalBinaryPropertyName]) continue;
+				if (!item?.binary || !item.binary[binaryPropertyName]) continue;
 
 				try {
-					const binaryData = item.binary[additionalBinaryPropertyName];
-					const buffer = await this.helpers.getBinaryDataBuffer(i, additionalBinaryPropertyName);
+					const binaryData = item.binary[binaryPropertyName];
+					const buffer = await this.helpers.getBinaryDataBuffer(i, binaryPropertyName);
 					const docContent = buffer.toString('base64');
 					const fileName = binaryData.fileName || `document${i + 1}.docx`;
 
@@ -392,7 +331,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			}
 		} else {
 			// Get documents from parameter
-			const additionalDocuments = this.getNodeParameter('additionalDocuments.document', index, []) as Array<{
+			const documents = this.getNodeParameter('documents.document', index, []) as Array<{
 				inputMethod: string;
 				fileName: string;
 				base64Content?: string;
@@ -400,7 +339,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				sortPosition: number;
 			}>;
 
-			for (const docConfig of additionalDocuments) {
+			for (const docConfig of documents) {
 				try {
 					const doc = await getDocumentContentFromInput.call(
 						this,
@@ -432,24 +371,19 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		}
 
 		// Build the request body according to the API specification
+		const Documents = documentsToMerge.map(doc => ({
+			Filename: doc.FileName,
+			DocContent: doc.FileContent,
+			SortPosition: doc.SortPosition,
+			FormatMode: formatMode,
+		}));
+
 		const body: IDataObject = {
-			document: {
-				name: mainDoc.fileName,
-			},
-			docContent: mainDoc.content,
-			MergeDocumentsAction: {
-				Documents: documentsToMerge.map(doc => ({
-					FileContent: doc.FileContent,
-					FileName: doc.FileName,
-					SortPosition: doc.SortPosition,
-				})),
+			Documents,
+			MergeOptions: {
+				ComplianceLevel: complianceLevel,
 			},
 		};
-
-		// Add merge options if needed
-		if (maintainFormatting !== undefined) {
-			(body.MergeDocumentsAction as IDataObject).MaintainFormatting = maintainFormatting;
-		}
 
 		// Send the request to the API
 		const responseData = await pdf4meAsyncRequest.call(
@@ -462,10 +396,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			// Generate filename if not provided
 			let fileName = outputFileName;
 			if (!fileName || fileName.trim() === '') {
-				const baseName = mainDoc.fileName
-					? mainDoc.fileName.replace(/\.[^.]*$/, '')
-					: 'merged_document';
-				fileName = `${baseName}_merged.docx`;
+				fileName = 'merged_document.docx';
 			}
 
 			// Ensure .docx extension
@@ -554,7 +485,6 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 						success: true,
 						documentsMerged: documentsToMerge.length,
 						documentNames: documentsToMerge.map(d => d.FileName),
-						maintainFormatting,
 						message: `Successfully merged ${documentsToMerge.length} documents`,
 					},
 					binary: {

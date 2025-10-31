@@ -290,14 +290,12 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		// Build the request body according to the API specification
 		const body: IDataObject = {
 			document: {
-				name: originalFileName,
+				Name: originalFileName,
 			},
 			docContent,
-			UpdateTOCAction: {
-				HeadingLevels: headingLevels,
-				IncludePageNumbers: includePageNumbers,
-				TabLeader: tabLeader,
-			},
+			headingLevels,
+			includePageNumbers: includePageNumbers,
+			tabLeader: tabLeader,
 			cultureName,
 		};
 

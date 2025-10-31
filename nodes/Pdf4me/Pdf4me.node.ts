@@ -19,6 +19,7 @@ import * as deletePagesFromWord from './actions/deletePagesFromWord';
 import * as updateToc from './actions/updateToc';
 import * as replaceText from './actions/replaceText';
 import * as updateHeadersFooters from './actions/updateHeadersFooters';
+import * as replaceTextWithImage from './actions/replaceTextWithImage';
 import { ActionConstants } from './GenericFunctions';
 
 export class Pdf4me implements INodeType {
@@ -63,6 +64,8 @@ export class Pdf4me implements INodeType {
 					operationResult.push(...(await replaceText.execute.call(this, i)));
 				} else if (action === ActionConstants.UpdateHeadersFooters) {
 					operationResult.push(...(await updateHeadersFooters.execute.call(this, i)));
+				} else if (action === ActionConstants.ReplaceTextWithImage) {
+					operationResult.push(...(await replaceTextWithImage.execute.call(this, i)));
 				}
 			} catch (err) {
 				if (this.continueOnFail()) {

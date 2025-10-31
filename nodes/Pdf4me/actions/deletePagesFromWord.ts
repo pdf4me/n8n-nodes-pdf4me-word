@@ -86,36 +86,38 @@ export const description: INodeProperties[] = [
 	},
 	// === DELETE PAGES SETTINGS ===
 	{
-		displayName: 'Page Ranges',
-		name: 'pageRanges',
+		displayName: 'Start Page',
+		name: 'startPage',
+		type: 'number',
+		default: 0,
+		description: 'Page number to begin deleting pages from (1-based index, 0 = not used)',
+		placeholder: '1',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.DeletePagesFromWord],
+			},
+		},
+	},
+	{
+		displayName: 'End Page',
+		name: 'endPage',
+		type: 'number',
+		default: 0,
+		description: 'Page number to stop deleting pages on (0 = defaults to last page of document)',
+		placeholder: '10',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.DeletePagesFromWord],
+			},
+		},
+	},
+	{
+		displayName: 'Page Numbers',
+		name: 'pageNumbers',
 		type: 'string',
 		default: '',
-		description: 'Comma-separated page ranges to delete (e.g., "1-3,5,7-9")',
-		placeholder: '1-3,5,7-9',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.DeletePagesFromWord],
-			},
-		},
-	},
-	{
-		displayName: 'Delete Empty Pages',
-		name: 'deleteEmptyPages',
-		type: 'boolean',
-		default: true,
-		description: 'Delete pages that become empty after deletion',
-		displayOptions: {
-			show: {
-				operation: [ActionConstants.DeletePagesFromWord],
-			},
-		},
-	},
-	{
-		displayName: 'Update Page Numbers',
-		name: 'updatePageNumbers',
-		type: 'boolean',
-		default: true,
-		description: 'Update page numbers after deletion',
+		description: 'Comma-separated list of page numbers to delete (e.g., "1,3,4"). Can be used alone or combined with Start/End Page',
+		placeholder: '1,3,4',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.DeletePagesFromWord],
@@ -187,9 +189,9 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		const docName = this.getNodeParameter('docName', index) as string;
 		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
 		const outputFileNameParam = this.getNodeParameter('outputFileName', index) as string;
-		const pageRanges = this.getNodeParameter('pageRanges', index, '') as string;
-		const deleteEmptyPages = this.getNodeParameter('deleteEmptyPages', index, true) as boolean;
-		const updatePageNumbers = this.getNodeParameter('updatePageNumbers', index, true) as boolean;
+		const startPage = this.getNodeParameter('startPage', index, 0) as number;
+		const endPage = this.getNodeParameter('endPage', index, 0) as number;
+		const pageNumbers = this.getNodeParameter('pageNumbers', index, '') as string;
 		const cultureName = this.getNodeParameter('cultureName', index, 'en-US') as string;
 
 		let docContent: string;
@@ -247,18 +249,33 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			throw new Error('Word content is required');
 		}
 
+		// Build the request body according to the API specification
 		const body: IDataObject = {
 			document: {
 				name: originalFileName,
 			},
 			docContent,
-			DeletePagesAction: {
-				PageRanges: pageRanges?.trim() || '',
-				DeleteEmptyPages: deleteEmptyPages,
-				UpdatePageNumbers: updatePageNumbers,
-			},
-			cultureName,
 		};
+
+		// Add StartPage if provided (non-zero)
+		if (startPage && startPage > 0) {
+			body.StartPage = startPage;
+		}
+
+		// Add EndPage if provided (non-zero)
+		if (endPage && endPage > 0) {
+			body.EndPage = endPage;
+		}
+
+		// Add PageNumbers if provided
+		if (pageNumbers && pageNumbers.trim() !== '') {
+			body.PageNumbers = pageNumbers.trim();
+		}
+
+		// Add CultureName if provided
+		if (cultureName && cultureName.trim() !== '') {
+			body.CultureName = cultureName;
+		}
 
 		const responseData = await pdf4meAsyncRequest.call(
 			this,
@@ -343,9 +360,9 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 						fileSize: wordBuffer.length,
 						success: true,
 						originalFileName,
-						pageRanges: pageRanges || undefined,
-						deleteEmptyPages,
-						updatePageNumbers,
+						startPage: startPage || undefined,
+						endPage: endPage || undefined,
+						pageNumbers: pageNumbers || undefined,
 						cultureName,
 						message: 'Successfully deleted pages from Word document',
 					},
