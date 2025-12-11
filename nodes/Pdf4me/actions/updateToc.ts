@@ -200,12 +200,12 @@ export const description: INodeProperties[] = [
  */
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	try {
-		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-		const docName = this.getNodeParameter('docName', index) as string;
-		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-		const headingLevels = this.getNodeParameter('headingLevels', index) as number;
-		const includePageNumbers = this.getNodeParameter('includePageNumbers', index) as boolean;
-		const tabLeader = this.getNodeParameter('tabLeader', index) as string;
+		const inputDataType = this.getNodeParameter('inputDataType', index, 'binaryData') as string;
+		const docName = this.getNodeParameter('docName', index, 'document.docx') as string;
+		const binaryDataName = this.getNodeParameter('binaryDataName', index, 'data') as string;
+		const headingLevels = this.getNodeParameter('headingLevels', index, 3) as number;
+		const includePageNumbers = this.getNodeParameter('includePageNumbers', index, true) as boolean;
+		const tabLeader = this.getNodeParameter('tabLeader', index, 'Dot') as string;
 		const cultureName = this.getNodeParameter('cultureName', index, 'en-US') as string;
 
 		let docContent: string;
@@ -214,7 +214,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		// Handle different input data types
 		if (inputDataType === 'binaryData') {
 			// Get Word content from binary data
-			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index, 'data') as string;
 			const item = this.getInputData(index);
 
 			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
@@ -230,7 +230,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			}
 		} else if (inputDataType === 'base64') {
 			// Use base64 content directly
-			docContent = this.getNodeParameter('base64Content', index) as string;
+			docContent = this.getNodeParameter('base64Content', index, '') as string;
 
 			// Remove data URL prefix if present
 			if (docContent.includes(',')) {
@@ -238,7 +238,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			}
 		} else if (inputDataType === 'url') {
 			// Download Word file from URL
-			const url = this.getNodeParameter('url', index) as string;
+			const url = this.getNodeParameter('url', index, '') as string;
 
 			if (!url || url.trim() === '') {
 				throw new Error('URL is required when using URL input type');
@@ -302,7 +302,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		// Send the request to the API
 		const responseData = await pdf4meAsyncRequest.call(
 			this,
-			'/office/ApiV2Word/UpdateTOC',
+			'/office/ApiV2Word/UpdateTableOfContents',
 			body,
 		);
 

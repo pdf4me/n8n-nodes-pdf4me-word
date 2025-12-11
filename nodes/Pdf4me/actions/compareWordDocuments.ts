@@ -408,10 +408,10 @@ async function getDocumentContent(
  */
 export async function execute(this: IExecuteFunctions, index: number) {
 	try {
-		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-		const firstDocName = this.getNodeParameter('firstDocName', index) as string;
-		const secondDocName = this.getNodeParameter('secondDocName', index) as string;
+		const outputFileName = this.getNodeParameter('outputFileName', index, 'compared_document.docx') as string;
+		const binaryDataName = this.getNodeParameter('binaryDataName', index, 'data') as string;
+		const firstDocName = this.getNodeParameter('firstDocName', index, 'original.docx') as string;
+		const secondDocName = this.getNodeParameter('secondDocName', index, 'revised.docx') as string;
 
 		// Get comparison options
 		const ignoreFormatting = this.getNodeParameter('ignoreFormatting', index, false) as boolean;
@@ -425,10 +425,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		const author = this.getNodeParameter('author', index, 'System Comparison') as string;
 
 		// Get first document
-		const firstInputDataType = this.getNodeParameter('firstInputDataType', index) as string;
-		const firstBinaryPropertyName = this.getNodeParameter('firstBinaryPropertyName', index) as string;
-		const firstBase64Content = this.getNodeParameter('firstBase64Content', index) as string;
-		const firstUrl = this.getNodeParameter('firstUrl', index) as string;
+		const firstInputDataType = this.getNodeParameter('firstInputDataType', index, 'binaryData') as string;
+		const firstBinaryPropertyName = this.getNodeParameter('firstBinaryPropertyName', index, 'data') as string;
+		const firstBase64Content = this.getNodeParameter('firstBase64Content', index, '') as string;
+		const firstUrl = this.getNodeParameter('firstUrl', index, '') as string;
 
 		const firstDoc = await getDocumentContent.call(
 			this,
@@ -441,10 +441,10 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		);
 
 		// Get second document
-		const secondInputDataType = this.getNodeParameter('secondInputDataType', index) as string;
-		const secondBinaryPropertyName = this.getNodeParameter('secondBinaryPropertyName', index) as string;
-		const secondBase64Content = this.getNodeParameter('secondBase64Content', index) as string;
-		const secondUrl = this.getNodeParameter('secondUrl', index) as string;
+		const secondInputDataType = this.getNodeParameter('secondInputDataType', index, 'binaryData') as string;
+		const secondBinaryPropertyName = this.getNodeParameter('secondBinaryPropertyName', index, 'data') as string;
+		const secondBase64Content = this.getNodeParameter('secondBase64Content', index, '') as string;
+		const secondUrl = this.getNodeParameter('secondUrl', index, '') as string;
 
 		const secondDoc = await getDocumentContent.call(
 			this,
@@ -458,21 +458,34 @@ export async function execute(this: IExecuteFunctions, index: number) {
 
 		// Build the request body according to the API specification
 		const body: IDataObject = {
-			document: {
+			firstDocument: {
 				Name: firstDoc.fileName,
 			},
-			docContent: firstDoc.content,
-			compareWith: secondDoc.content,
-			ignoreFormatting: ignoreFormatting,
-			ignoreCase: ignoreCase,
-			ignoreComments: ignoreComments,
-			ignoreTables: ignoreTables,
-			ignoreFields: ignoreFields,
-			ignoreFootnotes: ignoreFootnotes,
-			ignoreTextboxes: ignoreTextboxes,
-			ignoreHeadersAndFooters: ignoreHeadersAndFooters,
-			author,
+			firstDocContent: firstDoc.content,
+			secondDocument: {
+				Name: secondDoc.fileName,
+			},
+			secondDocContent: secondDoc.content,
 		};
+
+		// Build comparisonOptions object
+		const comparisonOptions: IDataObject = {
+			IgnoreFormatting: ignoreFormatting,
+			IgnoreCaseChanges: ignoreCase,
+			IgnoreComments: ignoreComments,
+			IgnoreTables: ignoreTables,
+			IgnoreFields: ignoreFields,
+			IgnoreFootnotes: ignoreFootnotes,
+			IgnoreTextboxes: ignoreTextboxes,
+			IgnoreHeadersAndFooters: ignoreHeadersAndFooters,
+		};
+
+		// Add Author if provided
+		if (author && author.trim() !== '') {
+			comparisonOptions.Author = author;
+		}
+
+		body.comparisonOptions = comparisonOptions;
 
 		// Send the request to the API
 		const responseData = await pdf4meAsyncRequest.call(

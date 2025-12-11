@@ -1,4 +1,4 @@
-import type { IExecuteFunctions, IDataObject, INodeProperties } from 'n8n-workflow';
+import type { IExecuteFunctions, IDataObject, INodeProperties, INodeExecutionData } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -84,14 +84,26 @@ export const description: INodeProperties[] = [
 			},
 		},
 	},
+	{
+		displayName: 'Document Name',
+		name: 'docName',
+		type: 'string',
+		default: 'document.docx',
+		description: 'Name of the Word file with extension (e.g., document.docx)',
+		placeholder: 'document.docx',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.OptimizeWordDocument],
+			},
+		},
+	},
 	// === OPTIMIZATION SETTINGS ===
 	{
 		displayName: 'Optimization Level',
 		name: 'optimizationLevel',
 		type: 'options',
-		required: true,
-		default: 'Low',
-		description: 'Level of optimization to apply to the Word document',
+		default: 'Medium',
+		description: 'Optimization level: Low (0-10%), Medium (50-80%), High (80-90%)',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.OptimizeWordDocument],
@@ -101,26 +113,39 @@ export const description: INodeProperties[] = [
 			{
 				name: 'Low',
 				value: 'Low',
-				description: 'Apply minimal optimization',
+				description: 'Low optimization (0-10% size reduction)',
 			},
 			{
 				name: 'Medium',
 				value: 'Medium',
-				description: 'Apply moderate optimization',
+				description: 'Medium optimization (50-80% size reduction)',
 			},
 			{
 				name: 'High',
 				value: 'High',
-				description: 'Apply maximum optimization',
+				description: 'High optimization (80-90% size reduction)',
 			},
 		],
+	},
+	{
+		displayName: 'Word Version',
+		name: 'wordVersion',
+		type: 'string',
+		default: '',
+		description: 'Word version (optional)',
+		placeholder: '',
+		displayOptions: {
+			show: {
+				operation: [ActionConstants.OptimizeWordDocument],
+			},
+		},
 	},
 	{
 		displayName: 'Culture Name',
 		name: 'cultureName',
 		type: 'string',
-		default: 'en-US',
-		description: 'Culture name for document (e.g., en-US, fr-FR, de-DE)',
+		default: '',
+		description: 'Culture name for localization (e.g., "en-US", "de-DE")',
 		placeholder: 'en-US',
 		displayOptions: {
 			show: {
@@ -133,9 +158,9 @@ export const description: INodeProperties[] = [
 		displayName: 'Output File Name',
 		name: 'outputFileName',
 		type: 'string',
-		default: 'word_optimized.docx',
+		default: 'optimized_document.docx',
 		description: 'Name for the optimized Word file',
-		placeholder: 'output.docx',
+		placeholder: 'optimized.docx',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.OptimizeWordDocument],
@@ -147,8 +172,8 @@ export const description: INodeProperties[] = [
 		name: 'binaryDataName',
 		type: 'string',
 		default: 'data',
-		description: 'Name for the binary data in the output object (used to access the processed file)',
-		placeholder: 'word-file',
+		description: 'Name for the binary data in the n8n output',
+		placeholder: 'data',
 		displayOptions: {
 			show: {
 				operation: [ActionConstants.OptimizeWordDocument],
@@ -158,19 +183,19 @@ export const description: INodeProperties[] = [
 ];
 
 /**
- * Optimize Word documents using PDF4Me API
+ * Optimize Word document using PDF4Me API
  * Process: Read Word file → Encode to base64 → Send API request → Poll for completion → Save optimized Word file
- * Optimizes Word documents by reducing file size and improving performance with configurable optimization levels
+ * Reduces file size and improves performance with configurable optimization levels (Low, Medium, High)
  */
-export async function execute(this: IExecuteFunctions, index: number) {
+export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	try {
-		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-		const outputFileName = this.getNodeParameter('outputFileName', index) as string;
-		const docName = this.getNodeParameter('docName', index) as string;
-		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-		const optimizationLevel = this.getNodeParameter('optimizationLevel', index) as string;
-		const wordVersion = this.getNodeParameter('wordVersion', index) as string;
-		const cultureName = this.getNodeParameter('cultureName', index) as string;
+		const inputDataType = this.getNodeParameter('inputDataType', index, 'binaryData') as string;
+		const docName = this.getNodeParameter('docName', index, 'document.docx') as string;
+		const binaryDataName = this.getNodeParameter('binaryDataName', index, 'data') as string;
+		const outputFileName = this.getNodeParameter('outputFileName', index, 'optimized_document.docx') as string;
+		const optimizationLevel = this.getNodeParameter('optimizationLevel', index, 'Medium') as string;
+		const wordVersion = this.getNodeParameter('wordVersion', index, '') as string;
+		const cultureName = this.getNodeParameter('cultureName', index, '') as string;
 
 		let docContent: string;
 		let originalFileName = docName;
@@ -178,7 +203,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		// Handle different input data types
 		if (inputDataType === 'binaryData') {
 			// Get Word content from binary data
-			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index, 'data') as string;
 			const item = this.getInputData(index);
 
 			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
@@ -194,7 +219,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			}
 		} else if (inputDataType === 'base64') {
 			// Use base64 content directly
-			docContent = this.getNodeParameter('base64Content', index) as string;
+			docContent = this.getNodeParameter('base64Content', index, '') as string;
 
 			// Remove data URL prefix if present
 			if (docContent.includes(',')) {
@@ -202,7 +227,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			}
 		} else if (inputDataType === 'url') {
 			// Download Word file from URL
-			const url = this.getNodeParameter('url', index) as string;
+			const url = this.getNodeParameter('url', index, '') as string;
 
 			if (!url || url.trim() === '') {
 				throw new Error('URL is required when using URL input type');
@@ -257,13 +282,21 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				Name: originalFileName,
 			},
 			docContent,
-			optimizationLevel,
-			cultureName,
 		};
+
+		// Add OptimizationLevel if provided
+		if (optimizationLevel && optimizationLevel.trim() !== '') {
+			body.OptimizationLevel = optimizationLevel;
+		}
 
 		// Add wordVersion if provided
 		if (wordVersion && wordVersion.trim() !== '') {
 			body.wordVersion = wordVersion;
+		}
+
+		// Add CultureName if provided
+		if (cultureName && cultureName.trim() !== '') {
+			body.CultureName = cultureName;
 		}
 
 		// Send the request to the API
@@ -279,8 +312,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			if (!fileName || fileName.trim() === '') {
 				const baseName = originalFileName
 					? originalFileName.replace(/\.[^.]*$/, '')
-					: 'word_optimized';
-				fileName = `${baseName}.docx`;
+					: 'optimized_document';
+				fileName = `${baseName}_optimized.docx`;
 			}
 
 			// Ensure .docx extension
@@ -382,8 +415,8 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						success: true,
 						originalFileName,
 						optimizationLevel,
-						wordVersion,
-						cultureName,
+						cultureName: cultureName || undefined,
+						wordVersion: wordVersion || undefined,
 						message: 'Word document optimized successfully',
 					},
 					binary: {
@@ -400,4 +433,3 @@ export async function execute(this: IExecuteFunctions, index: number) {
 		throw new Error(`Optimize Word document failed: ${errorMessage}`);
 	}
 }
-
