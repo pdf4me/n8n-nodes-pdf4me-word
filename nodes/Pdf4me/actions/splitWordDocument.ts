@@ -184,10 +184,10 @@ export const description: INodeProperties[] = [
  */
 export async function execute(this: IExecuteFunctions, index: number): Promise<INodeExecutionData[]> {
 	try {
-		const inputDataType = this.getNodeParameter('inputDataType', index) as string;
-		const docName = this.getNodeParameter('docName', index) as string;
-		const binaryDataName = this.getNodeParameter('binaryDataName', index) as string;
-		const splitType = this.getNodeParameter('splitType', index) as string;
+		const inputDataType = this.getNodeParameter('inputDataType', index, 'binaryData') as string;
+		const docName = this.getNodeParameter('docName', index, 'document.docx') as string;
+		const binaryDataName = this.getNodeParameter('binaryDataName', index, 'data') as string;
+		const splitType = this.getNodeParameter('splitType', index, 'Pages') as string;
 		const pageRanges = this.getNodeParameter('pageRanges', index, '') as string;
 		const cultureName = this.getNodeParameter('cultureName', index, 'en-US') as string;
 
@@ -197,7 +197,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		// Handle different input data types
 		if (inputDataType === 'binaryData') {
 			// Get Word content from binary data
-			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index) as string;
+			const binaryPropertyName = this.getNodeParameter('binaryPropertyName', index, 'data') as string;
 			const item = this.getInputData(index);
 
 			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
@@ -213,7 +213,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			}
 		} else if (inputDataType === 'base64') {
 			// Use base64 content directly
-			docContent = this.getNodeParameter('base64Content', index) as string;
+			docContent = this.getNodeParameter('base64Content', index, '') as string;
 
 			// Remove data URL prefix if present
 			if (docContent.includes(',')) {
@@ -221,7 +221,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			}
 		} else if (inputDataType === 'url') {
 			// Download Word file from URL
-			const url = this.getNodeParameter('url', index) as string;
+			const url = this.getNodeParameter('url', index, '') as string;
 
 			if (!url || url.trim() === '') {
 				throw new Error('URL is required when using URL input type');
@@ -270,19 +270,33 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			throw new Error('Word content is required');
 		}
 
+		// Map UI splitType values to API enum values
+		const splitTypeMap: { [key: string]: string } = {
+			Pages: 'array', // Pages uses array with page ranges
+			Sections: 'section',
+			Headings: 'headings',
+			Custom: 'array', // Custom also uses array
+		};
+
+		const apiSplitType = splitTypeMap[splitType] || splitType.toLowerCase();
+
 		// Build the request body according to the API specification
 		const body: IDataObject = {
 			document: {
-				Name: originalFileName,
+				name: originalFileName,
 			},
 			docContent,
-			splitType,
-			cultureName,
+			SplitType: apiSplitType,
 		};
 
-		// Add PageRanges if provided and SplitType is Pages or Custom
+		// Add SplitConfig (page ranges) if provided and SplitType is Pages or Custom
 		if (pageRanges && pageRanges.trim() !== '' && (splitType === 'Pages' || splitType === 'Custom')) {
-			body.pageRanges = pageRanges.trim();
+			body.SplitConfig = pageRanges.trim();
+		}
+
+		// Add CultureName if provided
+		if (cultureName && cultureName.trim() !== '') {
+			body.CultureName = cultureName;
 		}
 
 		// Send the request to the API
@@ -296,18 +310,38 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			// The API returns JSON with documents array
 			const response = responseData as IDataObject;
 
-			// Check if operation was successful
-			const success = response.Success as boolean;
-			if (!success) {
-				const errorMessage = (response.ErrorMessage as string) || 'Unknown error';
+			// Check if operation was successful (API might return Success field or error in different structure)
+			if (response.Success === false) {
+				const errorMessage = (response.ErrorMessage as string) || (response.message as string) || 'Unknown error';
 				const errors = (response.Errors as string[]) || [];
 				throw new Error(`Split operation failed: ${errorMessage}${errors.length > 0 ? '. Errors: ' + errors.join(', ') : ''}`);
 			}
 
-			// Get the array of split documents
-			const documents = response.documents as string[];
+			// Get the array of split documents - try different possible response structures
+			let documents: Array<string | IDataObject> | undefined;
+
+			// Try documents array directly
+			if (Array.isArray(response.documents)) {
+				documents = response.documents as Array<string | IDataObject>;
+			} else if (Array.isArray(response.Documents)) {
+				documents = response.Documents as Array<string | IDataObject>;
+			} else if (response.document) {
+				// Single document wrapped in object
+				const docObj = response.document as IDataObject;
+				if (typeof docObj === 'string') {
+					documents = [docObj];
+				} else if (docObj.docData || docObj.content || docObj.docContent) {
+					const docContent = (docObj.docData as string) || (docObj.content as string) || (docObj.docContent as string);
+					if (docContent) {
+						documents = [docContent];
+					}
+				}
+			}
+
 			if (!documents || !Array.isArray(documents) || documents.length === 0) {
-				throw new Error('No documents returned from split operation');
+				// Log available keys for debugging
+				const keys = Object.keys(response).join(', ');
+				throw new Error(`No documents returned from split operation. Response keys: ${keys}`);
 			}
 
 			// Process each split document and return as separate items
@@ -315,7 +349,24 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			const baseName = originalFileName ? originalFileName.replace(/\.[^.]*$/, '') : 'document';
 
 			for (let i = 0; i < documents.length; i++) {
-				const docBase64 = documents[i];
+				const docItem = documents[i];
+				let docBase64: string | undefined;
+
+				// Handle both string and object formats
+				if (typeof docItem === 'string') {
+					docBase64 = docItem;
+				} else if (typeof docItem === 'object' && docItem !== null) {
+					const docObj = docItem as IDataObject;
+					docBase64 =
+						(docObj.docData as string) ||
+						(docObj.content as string) ||
+						(docObj.docContent as string) ||
+						(docObj.data as string) ||
+						(docObj.file as string) ||
+						(docObj.DocContent as string) ||
+						(docObj.DocData as string);
+				}
+
 				if (!docBase64 || typeof docBase64 !== 'string') {
 					continue;
 				}
