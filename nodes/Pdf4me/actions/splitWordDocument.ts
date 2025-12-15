@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData, INodeProperties } from 'n8n-workflow';
+import { NodeOperationError, NodeApiError } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -201,7 +202,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			const item = this.getInputData(index);
 
 			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-				throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+				throw new NodeOperationError(this.getNode(), `No binary data found in property '${binaryPropertyName}'`, { itemIndex: index });
 			}
 
 			const binaryData = item[0].binary[binaryPropertyName];
@@ -224,7 +225,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			const url = this.getNodeParameter('url', index, '') as string;
 
 			if (!url || url.trim() === '') {
-				throw new Error('URL is required when using URL input type');
+				throw new NodeOperationError(this.getNode(), 'URL is required when using URL input type', { itemIndex: index });
 			}
 
 			try {
@@ -259,15 +260,15 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				}
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-				throw new Error(`Failed to download file from URL: ${errorMessage}`);
+				throw new NodeOperationError(this.getNode(), `Failed to download file from URL: ${errorMessage}`, { itemIndex: index });
 			}
 		} else {
-			throw new Error(`Unsupported input data type: ${inputDataType}`);
+			throw new NodeOperationError(this.getNode(), `Unsupported input data type: ${inputDataType}`, { itemIndex: index });
 		}
 
 		// Validate content
 		if (!docContent || docContent.trim() === '') {
-			throw new Error('Word content is required');
+			throw new NodeOperationError(this.getNode(), 'Word content is required', { itemIndex: index });
 		}
 
 		// Map UI splitType values to API enum values
@@ -314,7 +315,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			if (response.Success === false) {
 				const errorMessage = (response.ErrorMessage as string) || (response.message as string) || 'Unknown error';
 				const errors = (response.Errors as string[]) || [];
-				throw new Error(`Split operation failed: ${errorMessage}${errors.length > 0 ? '. Errors: ' + errors.join(', ') : ''}`);
+				throw new NodeOperationError(this.getNode(), `Split operation failed: ${errorMessage}${errors.length > 0 ? '. Errors: ' + errors.join(', ') : ''}`, { itemIndex: index });
 			}
 
 			// Get the array of split documents - try different possible response structures
@@ -341,7 +342,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			if (!documents || !Array.isArray(documents) || documents.length === 0) {
 				// Log available keys for debugging
 				const keys = Object.keys(response).join(', ');
-				throw new Error(`No documents returned from split operation. Response keys: ${keys}`);
+				throw new NodeOperationError(this.getNode(), `No documents returned from split operation. Response keys: ${keys}`, { itemIndex: index });
 			}
 
 			// Process each split document and return as separate items
@@ -413,21 +414,29 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 					binary: {
 						[binaryDataKey]: binaryData,
 					},
+					pairedItem: {
+						item: index,
+					},
 				});
 			}
 
 			if (results.length === 0) {
-				throw new Error('No valid documents could be extracted from split operation');
+				throw new NodeOperationError(this.getNode(), 'No valid documents could be extracted from split operation', { itemIndex: index });
 			}
 
 			return results;
 		}
 
-		throw new Error('No response data received from PDF4ME API');
+		throw new NodeOperationError(this.getNode(), 'No response data received from PDF4ME API', { itemIndex: index });
 	} catch (error) {
+		if (error instanceof NodeOperationError || error instanceof NodeApiError) {
+			throw error;
+		}
 		// Re-throw the error with additional context
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		throw new Error(`Split Word document failed: ${errorMessage}`);
+		throw new NodeOperationError(this.getNode(), `Split Word document failed: ${errorMessage}`, {
+			itemIndex: index,
+		});
 	}
 }
 

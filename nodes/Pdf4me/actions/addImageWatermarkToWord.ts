@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject, INodeProperties, INodeExecutionData } from 'n8n-workflow';
+import { NodeOperationError, NodeApiError } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -300,7 +301,7 @@ async function getImageContentFromInput(
 	if (inputMethod === 'binaryData' && binaryPropertyName) {
 		const item = this.getInputData(index);
 		if (!item[0]?.binary || !item[0].binary[binaryPropertyName]) {
-			throw new Error(`No binary image data found in property '${binaryPropertyName}'`);
+			throw new NodeOperationError(this.getNode(), `No binary image data found in property '${binaryPropertyName}'`, { itemIndex: index });
 		}
 		const buffer = await this.helpers.getBinaryDataBuffer(index, binaryPropertyName);
 		imageContent = buffer.toString('base64');
@@ -311,7 +312,7 @@ async function getImageContentFromInput(
 		}
 	} else if (inputMethod === 'url' && url) {
 		if (!url || url.trim() === '') {
-			throw new Error('URL is required when using URL input type');
+			throw new NodeOperationError(this.getNode(), 'URL is required when using URL input type', { itemIndex: index });
 		}
 		const response = await this.helpers.httpRequest({
 			method: 'GET',
@@ -322,11 +323,11 @@ async function getImageContentFromInput(
 		const buffer = Buffer.from(response.body as ArrayBuffer);
 		imageContent = buffer.toString('base64');
 	} else {
-		throw new Error(`Invalid image input method or missing content: ${inputMethod}`);
+		throw new NodeOperationError(this.getNode(), `Invalid image input method or missing content: ${inputMethod}`, { itemIndex: index });
 	}
 
 	if (!imageContent || imageContent.trim() === '') {
-		throw new Error('Image content is required');
+		throw new NodeOperationError(this.getNode(), 'Image content is required', { itemIndex: index });
 	}
 
 	return imageContent;
@@ -364,7 +365,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			const item = this.getInputData(index);
 
 			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-				throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+				throw new NodeOperationError(this.getNode(), `No binary data found in property '${binaryPropertyName}'`, { itemIndex: index });
 			}
 
 			const binaryData = item[0].binary[binaryPropertyName];
@@ -382,7 +383,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		} else if (inputDataType === 'url') {
 			const url = this.getNodeParameter('url', index) as string;
 			if (!url || url.trim() === '') {
-				throw new Error('URL is required when using URL input type');
+				throw new NodeOperationError(this.getNode(), 'URL is required when using URL input type', { itemIndex: index });
 			}
 
 			try {
@@ -413,15 +414,15 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				}
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-				throw new Error(`Failed to download file from URL: ${errorMessage}`);
+				throw new NodeOperationError(this.getNode(), `Failed to download file from URL: ${errorMessage}`, { itemIndex: index });
 			}
 		} else {
-			throw new Error(`Unsupported input data type: ${inputDataType}`);
+			throw new NodeOperationError(this.getNode(), `Unsupported input data type: ${inputDataType}`, { itemIndex: index });
 		}
 
 		// Validate document content
 		if (!docContent || docContent.trim() === '') {
-			throw new Error('Word content is required');
+			throw new NodeOperationError(this.getNode(), 'Word content is required', { itemIndex: index });
 		}
 
 		// Get watermark image content
@@ -502,11 +503,11 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 
 						if (!docContent) {
 							const docKeys = Object.keys(docObj).join(', ');
-							throw new Error(`Document object has unexpected structure. Available keys: ${docKeys}`);
+							throw new NodeOperationError(this.getNode(), `Document object has unexpected structure. Available keys: ${docKeys}`, { itemIndex: index });
 						}
 						wordBuffer = Buffer.from(docContent, 'base64');
 					} else {
-						throw new Error(`Document field is neither string nor object: ${typeof document}`);
+						throw new NodeOperationError(this.getNode(), `Document field is neither string nor object: ${typeof document}`, { itemIndex: index });
 					}
 				} else {
 					const docContent =
@@ -517,27 +518,23 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 
 					if (!docContent) {
 						const keys = Object.keys(responseData).join(', ');
-						throw new Error(`Word API returned unexpected JSON structure. Available keys: ${keys}`);
+						throw new NodeOperationError(this.getNode(), `Word API returned unexpected JSON structure. Available keys: ${keys}`, { itemIndex: index });
 					}
 					wordBuffer = Buffer.from(docContent, 'base64');
 				}
 			} else {
-				throw new Error(`Unexpected response format: ${typeof responseData}`);
+				throw new NodeOperationError(this.getNode(), `Unexpected response format: ${typeof responseData}`, { itemIndex: index });
 			}
 
 			// Validate the response contains Word data
 			if (!wordBuffer || wordBuffer.length < 1000) {
-				throw new Error(
-					'Invalid Word response from API. The file appears to be too small or corrupted.',
-				);
+				throw new NodeOperationError(this.getNode(), 'Invalid Word response from API. The file appears to be too small or corrupted.', { itemIndex: index });
 			}
 
 			// Validate Word file format (DOCX files start with PK signature - ZIP format)
 			const magicBytes = wordBuffer.toString('hex', 0, 4);
 			if (magicBytes !== '504b0304') {
-				throw new Error(
-					`Invalid Word file format. Expected DOCX file but got unexpected data. Magic bytes: ${magicBytes}`,
-				);
+				throw new NodeOperationError(this.getNode(), `Invalid Word file format. Expected DOCX file but got unexpected data. Magic bytes: ${magicBytes}`, { itemIndex: index });
 			}
 
 			// Create binary data for output
@@ -567,14 +564,20 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 					binary: {
 						[binaryDataKey]: binaryData,
 					},
+					pairedItem: {
+						item: index,
+					},
 				},
 			];
 		}
 
-		throw new Error('No response data received from PDF4ME API');
+		throw new NodeOperationError(this.getNode(), 'No response data received from PDF4ME API', { itemIndex: index });
 	} catch (error) {
+		if (error instanceof NodeOperationError || error instanceof NodeApiError) {
+			throw error;
+		}
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		throw new Error(`Add image watermark to Word document failed: ${errorMessage}`);
+		throw new NodeOperationError(this.getNode(), `Add image watermark to Word document failed: ${errorMessage}`, { itemIndex: index });
 	}
 }
 

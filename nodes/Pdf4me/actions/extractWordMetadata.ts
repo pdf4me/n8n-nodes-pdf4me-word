@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject, INodeProperties } from 'n8n-workflow';
+import { NodeOperationError, NodeApiError } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -134,7 +135,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			const item = this.getInputData(index);
 
 			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-				throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+				throw new NodeOperationError(this.getNode(), `No binary data found in property '${binaryPropertyName}'`, { itemIndex: index });
 			}
 
 			const binaryData = item[0].binary[binaryPropertyName];
@@ -157,7 +158,7 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			const url = this.getNodeParameter('url', index) as string;
 
 			if (!url || url.trim() === '') {
-				throw new Error('URL is required when using URL input type');
+				throw new NodeOperationError(this.getNode(), 'URL is required when using URL input type', { itemIndex: index });
 			}
 
 			try {
@@ -192,15 +193,15 @@ export async function execute(this: IExecuteFunctions, index: number) {
 				}
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-				throw new Error(`Failed to download file from URL: ${errorMessage}`);
+				throw new NodeOperationError(this.getNode(), `Failed to download file from URL: ${errorMessage}`, { itemIndex: index });
 			}
 		} else {
-			throw new Error(`Unsupported input data type: ${inputDataType}`);
+			throw new NodeOperationError(this.getNode(), `Unsupported input data type: ${inputDataType}`, { itemIndex: index });
 		}
 
 		// Validate content
 		if (!docContent || docContent.trim() === '') {
-			throw new Error('Word content is required');
+			throw new NodeOperationError(this.getNode(), 'Word content is required', { itemIndex: index });
 		}
 
 		// Build the request body according to the API specification
@@ -232,14 +233,22 @@ export async function execute(this: IExecuteFunctions, index: number) {
 						metadata,
 						message: 'Word metadata extracted successfully',
 					},
+					pairedItem: {
+						item: index,
+					},
 				},
 			];
 		}
 
-		throw new Error('No response data received from PDF4ME API');
+		throw new NodeOperationError(this.getNode(), 'No response data received from PDF4ME API', { itemIndex: index });
 	} catch (error) {
+		if (error instanceof NodeOperationError || error instanceof NodeApiError) {
+			throw error;
+		}
 		// Re-throw the error with additional context
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		throw new Error(`Extract Word metadata failed: ${errorMessage}`);
+		throw new NodeOperationError(this.getNode(), `Extract Word metadata failed: ${errorMessage}`, {
+			itemIndex: index,
+		});
 	}
 }

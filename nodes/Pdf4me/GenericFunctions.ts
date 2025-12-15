@@ -7,7 +7,7 @@ import type {
 	IHttpRequestMethods,
 	IHttpRequestOptions,
 } from 'n8n-workflow';
-import { NodeApiError } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 export async function pdf4meApiRequest(
 	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
@@ -170,12 +170,12 @@ export async function pdf4meAsyncRequest(
 					return response.body;
 				} else if (typeof response.body === 'string') {
 					if (response.body.length < 100) {
-						throw new Error(`API returned error message: ${response.body}`);
+						throw new NodeOperationError((this as IExecuteFunctions).getNode(), `API returned error message: ${response.body}`);
 					}
 					try {
 						return Buffer.from(response.body, 'base64');
 					} catch {
-						throw new Error(`API returned unexpected string response: ${response.body.substring(0, 100)}...`);
+						throw new NodeOperationError((this as IExecuteFunctions).getNode(), `API returned unexpected string response: ${response.body.substring(0, 100)}...`);
 					}
 				} else {
 					return Buffer.from(response.body, 'binary');
@@ -185,7 +185,7 @@ export async function pdf4meAsyncRequest(
 			// Async processing - always start polling when API returns 202
 			const locationUrl = response.headers.headers?.location || response.headers.location;
 			if (!locationUrl) {
-				throw new Error('No polling URL found in response');
+				throw new NodeOperationError((this as IExecuteFunctions).getNode(), 'No polling URL found in response');
 			}
 
 			// Start polling immediately when API returns 202
@@ -206,7 +206,13 @@ export async function pdf4meAsyncRequest(
 			throw new Error(errorMessage);
 		}
 	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as JsonObject);
+		if (error instanceof NodeOperationError) {
+			throw error;
+		}
+		if ('getNode' in this) {
+			throw new NodeApiError((this as IExecuteFunctions).getNode(), error as JsonObject);
+		}
+		throw error;
 	}
 }
 
