@@ -1,5 +1,5 @@
 import type { IExecuteFunctions, IDataObject, INodeProperties } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
+import { NodeOperationError, NodeApiError } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -505,11 +505,16 @@ export async function execute(this: IExecuteFunctions, index: number) {
 			];
 		}
 
-		throw new Error('No response data received from PDF4ME API');
+		throw new NodeOperationError(this.getNode(), 'No response data received from PDF4ME API', { itemIndex: index });
 	} catch (error) {
+		if (error instanceof NodeOperationError || error instanceof NodeApiError) {
+			throw error;
+		}
 		// Re-throw the error with additional context
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-		throw new Error(`Add text watermark to Word failed: ${errorMessage}`);
+		throw new NodeOperationError(this.getNode(), `Add text watermark to Word failed: ${errorMessage}`, {
+			itemIndex: index,
+		});
 	}
 }
 
