@@ -170,17 +170,19 @@ export async function pdf4meAsyncRequest(
 					return response.body;
 				} else if (typeof response.body === 'string') {
 					if (response.body.length < 100) {
-												throw new NodeOperationError((this as IExecuteFunctions).getNode(), `API returned error message: ${response.body}`);
-											}
-																try {
-																	return Buffer.from(response.body, 'base64');
-																} catch {
-																	throw new NodeOperationError((this as IExecuteFunctions).getNode(), `API returned unexpected string response: ${response.body.substring(0, 100)}...`);
-																}										} else {
-											return Buffer.from(response.body, 'binary');
-										}
-									}
-								} else if (response.statusCode === 202) {			// Async processing - always start polling when API returns 202
+						throw new NodeOperationError((this as IExecuteFunctions).getNode(), `API returned error message: ${response.body}`);
+					}
+					try {
+						return Buffer.from(response.body, 'base64');
+					} catch {
+						throw new NodeOperationError((this as IExecuteFunctions).getNode(), `API returned unexpected string response: ${response.body.substring(0, 100)}...`);
+					}
+				} else {
+					return Buffer.from(response.body, 'binary');
+				}
+			}
+		} else if (response.statusCode === 202) {
+			// Async processing - always start polling when API returns 202
 			const locationUrl = response.headers.headers?.location || response.headers.location;
 			if (!locationUrl) {
 				throw new NodeOperationError((this as IExecuteFunctions).getNode(), 'No polling URL found in response');
@@ -189,15 +191,30 @@ export async function pdf4meAsyncRequest(
 			// Start polling immediately when API returns 202
 			// Poll the location URL until completion
 			return await pollForCompletion.call(this, locationUrl, isJsonResponse);
-		    } catch (error) {
-		        if (error instanceof NodeOperationError) {
-		            throw error;
-		        }
-		        if ('getNode' in this) {
-		            throw new NodeApiError((this as IExecuteFunctions).getNode(), error as JsonObject);
-		        }
-		        throw error;
-		    }}
+		} else {
+			let errorMessage = `API Error: ${response.statusCode}`;
+			try {
+				if (typeof response.body === 'string') {
+					const errorJson = JSON.parse(response.body);
+					errorMessage = errorJson.message || errorJson.error || errorJson.detail || errorMessage;
+				} else {
+					errorMessage = `${errorMessage}: ${response.body}`;
+				}
+			} catch {
+				errorMessage = `${errorMessage}: ${response.body}`;
+			}
+			throw new Error(errorMessage);
+		}
+	} catch (error) {
+		if (error instanceof NodeOperationError) {
+			throw error;
+		}
+		if ('getNode' in this) {
+			throw new NodeApiError((this as IExecuteFunctions).getNode(), error as JsonObject);
+		}
+		throw error;
+	}
+}
 
 export function sanitizeProfiles(data: IDataObject): void {
 	// Convert profiles to a trimmed string (or empty string if not provided)

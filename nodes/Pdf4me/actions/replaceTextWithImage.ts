@@ -464,10 +464,10 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				}
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-				throw new NodeOperationError(this.getNode(), `Failed to download file from URL: ${errorMessage}`);
+				throw new NodeOperationError(this.getNode(), `Failed to download file from URL: ${errorMessage}`, { itemIndex: index });
 			}
 		} else {
-			throw new NodeOperationError(this.getNode(), `Unsupported input data type: ${inputDataType}`);
+			throw new NodeOperationError(this.getNode(), `Unsupported input data type: ${inputDataType}`, { itemIndex: index });
 		}
 
 		// Validate document content
