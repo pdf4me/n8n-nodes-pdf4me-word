@@ -1,4 +1,5 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData, INodeProperties } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import {
 	pdf4meAsyncRequest,
 	ActionConstants,
@@ -312,7 +313,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 		}>;
 
 		if (!phrasesData || phrasesData.length === 0) {
-			throw new Error('At least one text replacement phrase is required');
+			throw new NodeOperationError(this.getNode(), 'At least one text replacement phrase is required', { itemIndex: index });
 		}
 
 		let docContent: string;
@@ -325,7 +326,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			const item = this.getInputData(index);
 
 			if (!item[0].binary || !item[0].binary[binaryPropertyName]) {
-				throw new Error(`No binary data found in property '${binaryPropertyName}'`);
+				throw new NodeOperationError(this.getNode(), `No binary data found in property '${binaryPropertyName}'`, { itemIndex: index });
 			}
 
 			const binaryData = item[0].binary[binaryPropertyName];
@@ -348,7 +349,7 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 			const url = this.getNodeParameter('url', index) as string;
 
 			if (!url || url.trim() === '') {
-				throw new Error('URL is required when using URL input type');
+				throw new NodeOperationError(this.getNode(), 'URL is required when using URL input type', { itemIndex: index });
 			}
 
 			try {
@@ -383,15 +384,15 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				}
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-				throw new Error(`Failed to download file from URL: ${errorMessage}`);
+				throw new NodeOperationError(this.getNode(), `Failed to download file from URL: ${errorMessage}`, { itemIndex: index });
 			}
 		} else {
-			throw new Error(`Unsupported input data type: ${inputDataType}`);
+			throw new NodeOperationError(this.getNode(), `Unsupported input data type: ${inputDataType}`, { itemIndex: index });
 		}
 
 		// Validate content
 		if (!docContent || docContent.trim() === '') {
-			throw new Error('Word content is required');
+			throw new NodeOperationError(this.getNode(), 'Word content is required', { itemIndex: index });
 		}
 
 		// Build the phrases array with PascalCase field names for the API
@@ -512,12 +513,12 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 
 						if (!docContent) {
 							const docKeys = Object.keys(docObj).join(', ');
-							throw new Error(`Document object has unexpected structure. Available keys: ${docKeys}`);
+							throw new NodeOperationError(this.getNode(), `Document object has unexpected structure. Available keys: ${docKeys}`, { itemIndex: index });
 						}
 
 						wordBuffer = Buffer.from(docContent, 'base64');
 					} else {
-						throw new Error(`Document field is neither string nor object: ${typeof document}`);
+						throw new NodeOperationError(this.getNode(), `Document field is neither string nor object: ${typeof document}`, { itemIndex: index });
 					}
 				} else {
 					// No document field, try other possible locations
@@ -531,25 +532,23 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 					if (!docContent) {
 						// If no known field found, log the structure for debugging
 						const keys = Object.keys(responseData).join(', ');
-						throw new Error(`Word API returned unexpected JSON structure. Available keys: ${keys}`);
+						throw new NodeOperationError(this.getNode(), `Word API returned unexpected JSON structure. Available keys: ${keys}`, { itemIndex: index });
 					}
 
 					wordBuffer = Buffer.from(docContent, 'base64');
 				}
 			} else {
-				throw new Error(`Unexpected response format: ${typeof responseData}`);
+				throw new NodeOperationError(this.getNode(), `Unexpected response format: ${typeof responseData}`, { itemIndex: index });
 			}
 
 			// Validate the response contains Word data
 			if (!wordBuffer || wordBuffer.length < 1000) {
-				throw new Error(
-					'Invalid Word response from API. The file appears to be too small or corrupted.',
-				);
+				throw new NodeOperationError(this.getNode(), 'Invalid Word response from API. The file appears to be too small or corrupted.', { itemIndex: index });
 			}
 
 			const magicBytes = wordBuffer.toString('hex', 0, 4);
 			if (magicBytes !== '504b0304') {
-				throw new Error('Invalid DOCX file returned from API');
+				throw new NodeOperationError(this.getNode(), 'Invalid DOCX file returned from API', { itemIndex: index });
 			}
 
 			// Create binary data
@@ -574,6 +573,9 @@ export async function execute(this: IExecuteFunctions, index: number): Promise<I
 				},
 				binary: {
 					[binaryDataKey]: binaryData,
+				},
+				pairedItem: {
+					item: index,
 				},
 			}];
 		}
