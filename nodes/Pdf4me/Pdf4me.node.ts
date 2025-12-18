@@ -22,7 +22,7 @@ import * as updateHeadersFooters from './actions/updateHeadersFooters';
 import * as replaceTextWithImage from './actions/replaceTextWithImage';
 import { ActionConstants } from './GenericFunctions';
 
-export class Pdf4me implements INodeType {
+export class Pdf4meWord implements INodeType {
 	description: INodeTypeDescription;
 
 	constructor(baseDescription: INodeTypeBaseDescription) {

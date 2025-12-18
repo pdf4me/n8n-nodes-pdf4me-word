@@ -28,7 +28,7 @@ export const descriptions: INodeTypeDescription = {
 	outputs: [NodeConnectionType.Main],
 	credentials: [
 		{
-			name: 'pdf4meApi',
+			name: 'pdf4meWordApi',
 			required: true,
 		},
 	], // eslint-disable-line n8n-nodes-base/node-param-default-missing
