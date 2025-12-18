@@ -80,7 +80,7 @@ To use this node, you need a PDF4ME API key:
 3. Generate a new API key
 4. Add the API key to your n8n credentials:
    - In n8n, go to **Credentials > New**
-   - Select **PDF4me API**
+   - Select **PDF4ME Word API**
    - Enter your API key
    - Save the credentials
 

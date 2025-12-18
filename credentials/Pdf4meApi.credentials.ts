@@ -5,13 +5,13 @@ import {
 	INodeProperties,
 } from 'n8n-workflow';
 
-export class Pdf4meApi implements ICredentialType {
-	name = 'pdf4meApi';
-	displayName = 'PDF4ME API';
+export class Pdf4meWordApi implements ICredentialType {
+	name = 'pdf4meWordApi';
+	displayName = 'PDF4ME Word API';
 	documentationUrl = 'https://dev.pdf4me.com/apiv2/documentation/';
 	properties: INodeProperties[] = [
 		{
-			displayName: 'PDF4ME API Key',
+			displayName: 'PDF4ME Word API Key',
 			name: 'apiKey',
 			type: 'string',
 			default: '',
